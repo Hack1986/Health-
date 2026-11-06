@@ -1,0 +1,43 @@
+{
+  "id": "https://hack1986.github.io/My-health-/",
+  "name": "My Health Record",
+  "short_name": "My Health",
+  "description": "บันทึกและติดตามข้อมูลสุขภาพส่วนบุคคลแบบออฟไลน์",
+  "lang": "th",
+  "start_url": "https://hack1986.github.io/My-health-/",
+  "scope": "https://hack1986.github.io/My-health-/",
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "portrait",
+  "background_color": "#f2f6fb",
+  "theme_color": "#0868c8",
+  "icons": [
+    {
+      "src": "https://hack1986.github.io/My-health-/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://hack1986.github.io/My-health-/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://hack1986.github.io/My-health-/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "https://hack1986.github.io/My-health-/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

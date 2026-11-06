@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#0868c8"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="My Health"><link rel="manifest" href="https://hack1986.github.io/My-health-/manifest.webmanifest"><link rel="icon" href="https://hack1986.github.io/My-health-/icons/icon-192.png"><link rel="apple-touch-icon" href="https://hack1986.github.io/My-health-/icons/icon-192.png"><title>My Health Record</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f2f6fb;color:#172536;font-family:Arial,sans-serif;font-size:19px}
+header{background:#0868c8;color:white;padding:20px 18px 18px;border-radius:0 0 22px 22px}
+h1{font-size:27px;margin:0 0 5px}header p{margin:0;font-size:19px;font-weight:700;line-height:1.4}.header-date{padding-top:5px}
+main{padding:14px;max-width:650px;margin:auto}.date{background:#e4f7e7;padding:15px;border-radius:16px;font-weight:bold;margin-bottom:12px}
+.card{background:white;border-radius:17px;padding:15px;margin:11px 0;box-shadow:0 2px 7px #17324d12}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px}.label{font-size:18px;font-weight:bold}.value{font-size:30px;font-weight:bold;margin-top:5px}
+.sub{font-size:15px;color:#586779}.tag{font-size:15px;padding:5px 9px;border-radius:9px;background:#eaf2ff}
+button{border:0;border-radius:14px;padding:15px 18px;font-size:20px;font-weight:bold;cursor:pointer}
+.primary{background:#0ab64b;color:white;width:100%;margin:8px 0}.blue{background:#0868c8;color:white}.light{background:#e8eef6;color:#172536}
+nav{display:flex;gap:8px;margin-top:12px}nav button{flex:1;font-size:16px;padding:12px 4px}
+input,select{width:100%;font-size:20px;padding:13px;border:2px solid #d7e0eb;border-radius:12px;margin:6px 0 13px;background:white}
+label{font-weight:bold;display:block;margin-top:8px}.hidden{display:none}.alert{background:#fff0f0;border-left:7px solid #e53935}.ok{color:#16833d}.warn{color:#c36a00}.bad{color:#c62828}
+h2{font-size:23px;margin:4px 0 12px}.history-item{border-bottom:1px solid #e6edf4;padding:10px 0;font-size:17px}
+.small{font-size:14px;color:#64748b;line-height:1.5}
+
+.report-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.report-tile{background:#f3f7fc;border-radius:12px;padding:12px;min-width:0}
+.report-tile b{display:block;font-size:24px;margin-top:4px;overflow-wrap:anywhere}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.toolbar button{flex:1;min-width:130px}
+canvas{width:100%;height:175px;display:block;background:#fff;border:1px solid #e4eaf1;border-radius:12px}
+@media print{header,nav,.no-print,button{display:none!important}body{background:#fff;font-size:13px}main{max-width:none;padding:0}.card{box-shadow:none;border:1px solid #ddd;break-inside:avoid}#reportView{display:block!important}.hidden{display:none!important}.report-grid{grid-template-columns:repeat(3,minmax(0,1fr))}canvas{max-height:150px}}
+
+/* One-page A4 clinician summary */
+.a4-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;border-bottom:2px solid #1d5f9f;padding-bottom:7px;margin-bottom:9px}
+.a4-head h2{font-size:21px;margin:0 0 3px}
+.a4-meta{font-size:11px;color:#536273;text-align:right}
+.a4-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:8px 0}
+.a4-stat{border:1px solid #dce5ee;border-radius:7px;padding:6px 8px;min-width:0}
+.a4-stat strong{display:block;font-size:11px;color:#536273}
+.a4-stat .latest{font-size:18px;font-weight:700;margin:2px 0}
+.a4-stat .range{font-size:10px;color:#526174}
+.a4-charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.a4-chart{border:1px solid #dce5ee;border-radius:7px;padding:5px 7px;break-inside:avoid}
+.a4-chart b{font-size:11px}
+.a4-chart canvas{height:78px!important;width:100%;border:0!important}
+.a4-readings{font-size:10px;line-height:1.35;margin-top:7px;border-top:1px solid #dce5ee;padding-top:6px}
+.a4-foot{font-size:9px;color:#5b6572;margin-top:6px}
+@page{size:A4 portrait;margin:9mm}
+@media print{
+ body{background:white!important;font-size:11px!important}
+ header,nav,.no-print{display:none!important}
+ main{max-width:none!important;padding:0!important}
+ #reportView{display:block!important}
+ #reportView>.card{border:0!important;box-shadow:none!important;padding:0!important;margin:0!important}
+ #reportView h2:not(.a4-head h2){font-size:13px!important;margin:5px 0!important}
+ #reportHeading,#dailySummary,#dailyReadings,
+ #reportView>.card>h2,#reportView>.card>p,
+ #reportView>.card>.card{display:none!important}
+ #a4Report{display:block!important}
+}
+
+/* Color-coded, senior-friendly history cards */
+.history-list{display:flex;flex-direction:column;gap:14px}
+.history-record{background:#fff;border:1px solid #e3eaf2;border-radius:18px;padding:16px;box-shadow:0 4px 14px rgba(28,55,90,.06)}
+.history-record-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.history-record-date{font-size:18px;font-weight:800;color:#172536}
+.history-record-time{font-size:14px;color:#64748b}
+.history-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.metric-box{border-radius:13px;padding:12px 10px;min-width:0;border-left:6px solid transparent}
+.metric-box .metric-label{font-size:14px;font-weight:700;line-height:1.35}
+.metric-box .metric-value{font-size:25px;font-weight:800;line-height:1.25;margin-top:5px;overflow-wrap:anywhere}
+.metric-box .metric-unit{font-size:13px;font-weight:500}
+.metric-bp{background:#fff0f0;border-color:#e34b4b;color:#922626}
+.metric-pulse-bp{background:#fff4e6;border-color:#ed922d;color:#8a4b08}
+.metric-spo{background:#eaf4ff;border-color:#3185d6;color:#15528a}
+.metric-pulse-ox{background:#f1edff;border-color:#8064cf;color:#4e3a91}
+.metric-glucose{background:#fff8dc;border-color:#d3a51d;color:#74570a}
+.metric-temp{background:#e9f8ef;border-color:#39a66a;color:#17663a}
+.history-note{margin-top:12px;padding:10px 12px;border-radius:10px;background:#f3f6fa;color:#46566a;font-size:15px}
+.history-empty{padding:22px;text-align:center;color:#64748b;background:#f5f8fc;border-radius:14px;font-size:17px}
+@media(max-width:390px){.history-metrics{grid-template-columns:1fr}.metric-box .metric-value{font-size:23px}}
+
+/* Professional dashboard refresh v4 */
+:root{--navy:#102a43;--blue:#1769aa;--teal:#0f8b8d;--bg:#f4f7fb;--line:#e4ebf2;--muted:#64748b}
+body{background:var(--bg);color:var(--navy);font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;font-size:17px;line-height:1.5}
+header{background:linear-gradient(125deg,#123b63 0%,#1769aa 58%,#168b91 100%);padding:22px 18px 20px;border-radius:0 0 24px 24px;box-shadow:0 8px 24px #123b6322}
+header h1{font-size:25px;letter-spacing:.1px}header p{font-size:14px;font-weight:500;opacity:.9}
+main{max-width:760px;padding:16px 15px 28px}
+nav{position:sticky;top:0;z-index:20;max-width:760px;margin:0 auto;padding:10px 14px;background:#f4f7fbef;backdrop-filter:blur(12px);border-bottom:1px solid #dce5ef;gap:7px;box-shadow:0 4px 14px #18344b0a}
+nav button{font-size:14px;padding:10px 7px;border-radius:12px;white-space:nowrap;min-height:42px}
+@media(max-width:520px){nav{gap:4px;padding:8px 6px}nav button{font-size:11px;padding:9px 3px;min-width:0}}
+nav button.blue{background:#1769aa;color:white;box-shadow:0 3px 9px #1769aa30}
+nav button.light{background:white;color:#36536d;border:1px solid #dce5ef}
+.card{border:1px solid #e7edf3;border-radius:19px;padding:16px;margin:12px 0;box-shadow:0 5px 18px rgba(24,52,75,.055)}
+#home{padding-top:2px}
+#homeProfileCard{background:linear-gradient(120deg,#fff 0%,#f0f7ff 100%);border-color:#dceaf7;padding:13px 15px}
+#homeProfileCard .label{font-size:15px;color:#35536f}
+#homeProfile{font-size:14px;margin-top:5px;color:#5b7084}
+#home>.card:not(#homeProfileCard){margin:0;min-width:0;padding:14px;border-radius:17px}
+#home>.card:not(#homeProfileCard) .label{font-size:14px;color:#4c647b}
+#home>.card:not(#homeProfileCard) .value{font-size:27px;line-height:1.25;color:#143c5b;margin-top:9px}
+#home>.card:nth-of-type(2){border-top:4px solid #d95757}
+#home>.card:nth-of-type(3){border-top:4px solid #e39b3b}
+#home>.card:nth-of-type(4){border-top:4px solid #3b8bc8}
+#home>.card:nth-of-type(5){border-top:4px solid #d0a32c}
+#home>.card:nth-of-type(6){border-top:4px solid #32a36a}
+.home-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin:12px 0}
+.home-metrics .card{margin:0}
+.home-section-title{font-size:18px;font-weight:800;color:#173d5c;margin:19px 2px 8px}
+.home-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
+.home-actions button{margin:0!important;min-height:52px;font-size:16px;padding:12px;border-radius:14px}
+.primary{background:linear-gradient(120deg,#0b9b70,#13ad83);box-shadow:0 5px 12px #0b9b7026}
+.blue{background:#1769aa}
+button{font-family:inherit;font-size:17px;border-radius:13px}
+input,select,textarea{font-family:inherit;font-size:18px;border:1.5px solid #d5e0ea;border-radius:13px}
+h2{font-size:21px;color:#173d5c}
+.tag{background:#edf4fa;color:#49647c;font-size:12px;font-weight:700}
+.sub,.small{color:#687d90}
+#alerts{font-size:14px;line-height:1.55}
+#home .alert,#home #alerts{border-radius:12px}
+@media(max-width:420px){header h1{font-size:23px}.home-metrics{gap:8px}.home-metrics .card{padding:12px}.home-metrics .value{font-size:24px!important}.home-actions button{font-size:14px}nav{gap:5px;padding:8px 8px}nav button{font-size:12px;padding:9px 4px}}
+@media print{nav{display:none!important}.home-metrics{display:block}}
+
+
+/* v5 focused forms and report layout */
+.page-intro{padding:7px 3px 12px}.page-intro .eyebrow{font-size:11px;letter-spacing:1.5px;font-weight:800;color:#16818b}.page-intro h2{font-size:24px;margin:3px 0 2px}.page-intro p{font-size:14px;color:#6a7d90;margin:0}
+.form-card{background:#fff;border:1px solid #e2eaf1;border-radius:18px;padding:17px;margin:12px 0;box-shadow:0 4px 15px rgba(24,52,75,.045)}
+.form-title{display:flex;align-items:center;gap:12px;margin-bottom:14px}.form-title h3,.report-controls h3,.report-section h3{font-size:17px;color:#173d5c;margin:0}.form-title p{font-size:13px;color:#738497;margin:2px 0 0}.form-icon{width:43px;height:43px;border-radius:14px;display:grid;place-items:center;background:#edf5fb;font-size:22px;flex:0 0 auto}
+.bp-form{border-top:4px solid #df7777}.oxygen-form{border-top:4px solid #4d9bd0}.glucose-form{border-top:4px solid #d5ad3f}.temp-form{border-top:4px solid #45a879}
+.field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 12px}.full-field{grid-column:1/-1}
+.form-card label{font-size:14px;color:#344e65;margin-top:5px}.form-card label small{font-weight:500;color:#7b8da0}.form-card input,.form-card textarea{font-size:17px;padding:13px;margin:6px 0 10px;border:1.5px solid #d6e1eb;background:#fbfdff}.form-card textarea{width:100%;resize:vertical;line-height:1.5}.form-card input:focus,.form-card textarea:focus{outline:3px solid #dceeff;border-color:#4d91c8}
+.entry-submit{margin:16px 0 28px}.entry-submit .primary{min-height:54px;font-size:17px}.entry-submit .small{text-align:center;margin-top:10px}
+.report-controls{padding:17px}.report-controls h3{margin-bottom:8px}.report-controls label{font-size:14px}.report-controls input{font-size:17px}.report-section{margin:19px 0}.report-section h3{margin:0 0 10px}.report-grid{gap:10px}.report-tile{border:1px solid #e4ebf2;background:#f8fbfe;padding:14px;border-radius:15px}.report-tile span{font-size:13px}.report-tile b{font-size:21px;color:#173d5c}.history-item{background:#f8fbfe;border:1px solid #e7edf3;border-radius:13px;padding:13px;margin:9px 0;line-height:1.7;font-size:14px;overflow-wrap:anywhere}
+.trend-details{background:#fff;border:1px solid #e2eaf1;border-radius:17px;padding:15px;margin:18px 0}.trend-details summary{font-size:16px;font-weight:800;color:#1769aa;cursor:pointer;padding:3px}.trend-card{background:#fbfdff;border:1px solid #e8eef4;border-radius:13px;padding:12px;margin:10px 0}.trend-card b{font-size:14px;color:#35536f}.trend-card canvas{margin-top:8px;height:150px}
+@media(max-width:420px){.field-grid{gap:0 8px}.form-card{padding:14px}.page-intro h2{font-size:22px}.report-grid{gap:8px}.report-tile{padding:11px}.report-tile b{font-size:18px}.trend-card canvas{height:130px}}
+@media print{.page-intro,.report-controls,.report-section,.trend-details{display:none!important}}
+/* v7 readable settings and developer page */
+.settings-page .page-intro,.developer-page .page-intro{padding:7px 3px 12px}
+.settings-card{background:#fff;border:1px solid #e2eaf1;border-radius:18px;padding:16px;margin:12px 0;box-shadow:0 4px 15px rgba(24,52,75,.045)}
+.settings-title{display:flex;align-items:center;gap:11px;margin-bottom:12px}
+.settings-icon{width:42px;height:42px;display:grid;place-items:center;border-radius:13px;background:#edf5fb;font-size:21px;flex:0 0 auto}
+.settings-title h3{font-size:16px;margin:0;color:#173d5c}.settings-title p{font-size:12px;color:#738497;margin:2px 0 0}
+.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 12px}
+.settings-field label{font-size:13px;color:#344e65;margin-top:6px}.settings-field input{font-size:17px;padding:12px;margin:5px 0 9px;background:#fbfdff}
+.settings-hint{font-size:13px;line-height:1.55;color:#687d90;background:#f5f8fb;border-radius:11px;padding:10px 12px;margin:7px 0 0}
+.settings-actions{margin:14px 0 25px}.settings-actions button{min-height:52px;font-size:16px;margin:7px 0}
+.permission-state{display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:12px;background:#f4f8fc;font-size:14px;color:#36536d;margin:10px 0}
+.permission-dot{width:10px;height:10px;border-radius:50%;background:#d69b2c;flex:0 0 auto}.permission-dot.on{background:#16a36a}
+.developer-card{overflow:hidden;text-align:center;padding:24px 18px;background:linear-gradient(145deg,#fff 0%,#eff7ff 100%);border:1px solid #dceaf7;border-radius:21px;box-shadow:0 5px 18px rgba(24,52,75,.06);margin:12px 0}
+.developer-avatar{width:76px;height:76px;border-radius:24px;margin:0 auto 13px;display:grid;place-items:center;background:linear-gradient(135deg,#1769aa,#168b91);color:#fff;font-size:34px;font-weight:800;box-shadow:0 7px 17px #1769aa30}
+.developer-name{font-size:22px;font-weight:850;color:#173d5c;margin:0 0 6px}.developer-role{display:inline-block;padding:6px 13px;border-radius:30px;background:#e5f2fb;color:#17608f;font-size:14px;font-weight:750;margin:4px 0 12px}
+.developer-unit{font-size:16px;line-height:1.6;color:#526b80;font-weight:650}.developer-note{font-size:13px;color:#7b8da0;margin-top:20px;border-top:1px solid #e1eaf2;padding-top:13px}
+@media(max-width:420px){.settings-card{padding:14px}.settings-grid{gap:0 8px}.settings-field label{font-size:12px}.developer-card{padding:21px 14px}}
+
+
+
+/* v6 medication planner and readable report cards */
+.med-editor{background:#f6f9fc;border:1px solid #e1eaf2;border-radius:15px;padding:14px;margin-top:12px}
+.med-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px}.med-fields .wide{grid-column:1/-1}
+.med-list{display:flex;flex-direction:column;gap:10px;margin-top:12px}.med-item{border:1px solid #e1eaf2;border-radius:15px;padding:13px;background:#fff}
+.med-item-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.med-item h4{margin:0;color:#173d5c;font-size:17px}.med-time{display:inline-flex;background:#eaf4ff;color:#15528a;border-radius:9px;padding:5px 9px;margin:6px 5px 0 0;font-size:14px;font-weight:700}
+.med-actions{display:flex;gap:7px;margin-top:9px}.med-actions button{font-size:13px;padding:8px 11px}.med-empty{padding:15px;text-align:center;background:#f5f8fc;border-radius:12px;color:#64748b}
+.report-reading{background:#fff;border:1px solid #e2eaf1;border-radius:16px;padding:14px;margin:10px 0;box-shadow:0 3px 12px rgba(24,52,75,.04)}
+.report-reading-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;font-weight:800;color:#173d5c}
+.report-reading-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.report-value{padding:10px;border-radius:12px;background:#f3f7fb;min-width:0}.report-value b{display:block;font-size:22px;color:#173d5c;overflow-wrap:anywhere}.report-value span{font-size:13px;color:#64748b}
+@media(max-width:390px){.med-fields,.report-reading-grid{grid-template-columns:1fr}.med-fields .wide{grid-column:auto}}
+
+
+/* V8 offline-first, privacy, backup and security */
+.security-card{background:#fff;border:1px solid #dbe6f1;border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 4px 14px #17365d0b}.security-card h3{margin:0 0 7px;color:#183b66}.security-card p{margin:5px 0;color:#52647a;font-size:13px}.security-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}.security-actions button{width:100%}.privacy-badge{display:inline-block;background:#e5f7ed;color:#087443;border-radius:20px;padding:6px 11px;font-weight:700;font-size:13px}.record-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.record-actions button{padding:8px 12px;font-size:13px}.pin-overlay{position:fixed;inset:0;background:#10243beF;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}.pin-box{background:white;border-radius:20px;padding:24px;width:min(100%,360px);text-align:center;box-shadow:0 15px 50px #0005}.pin-box h2{margin-top:0;color:#173b68}.pin-box input{font-size:25px;text-align:center;letter-spacing:9px;max-width:220px;margin:12px auto}.pin-box button{width:100%;margin-top:8px}.offline-status{font-size:13px;color:#087443;background:#e8f7ee;padding:9px 12px;border-radius:10px;margin:8px 0}
+</style></head><body>
+<header><h1>❤️ My Health Record</h1><p id="headerDate" class="header-date"></p></header>
+<nav><button class="blue" onclick="show('home')">หน้าหลัก</button><button class="light" onclick="show('profile')">ผู้ใช้งาน</button><button class="light" onclick="show('history')">ประวัติ</button><button class="light" onclick="show('settings')">ตั้งค่า</button><button class="light" onclick="show('developer')">ผู้พัฒนา</button></nav>
+<div id="installPanel" class="card no-print" style="margin:12px 14px;padding:13px;border:2px solid #b8d8f5;display:none">
+ <div style="font-weight:800;font-size:18px">📲 ติดตั้ง My Health Record ลงเครื่อง</div>
+ <div id="installHelp" class="small" style="margin:5px 0 9px">ติดตั้งเพื่อเพิ่มไอคอนไว้ที่หน้าจอ แล้วแตะเข้าใช้งานได้สะดวก</div>
+ <button id="installButton" class="blue" style="width:100%;display:none" type="button">ติดตั้งแอป</button>
+</div>
+
+<main>
+<section id="home">
+<div class="home-section-title" style="margin-top:2px">ภาพรวมสุขภาพ</div>
+<div class="card" id="homeProfileCard"><div class="row"><span class="label">👤 ข้อมูลผู้ใช้งาน</span><button class="light" style="font-size:13px;padding:7px 11px" onclick="show('profile')">แก้ไขข้อมูล</button></div><div id="homeProfile" class="sub">ยังไม่ได้กรอกข้อมูลผู้ใช้งาน</div></div>
+<div class="home-metrics">
+<div class="card"><div class="row"><span class="label">❤️ ความดันโลหิต</span><span class="tag">mmHg</span></div><div class="value" id="bp">ยังไม่มีข้อมูล</div><div class="sub" id="bpstatus">บันทึกเพื่อเริ่มติดตาม</div></div>
+<div class="card"><div class="row"><span class="label">💓 ชีพจร (เครื่องวัดความดัน)</span></div><div class="value" id="pulseBp">—</div><div class="sub">ครั้ง/นาที</div></div>
+<div class="card"><div class="row"><span class="label">🫁 SpO₂</span><span class="tag">%</span></div><div class="value" id="spo">—</div><div class="sub" id="spoPulse">ชีพจร — ครั้ง/นาที</div></div>
+<div class="card"><div class="row"><span class="label">🩸 น้ำตาลปลายนิ้ว</span><span class="tag">mg/dL</span></div><div class="value" id="sugar">—</div></div>
+<div class="card"><div class="row"><span class="label">🌡️ อุณหภูมิร่างกาย</span><span class="tag">°C</span></div><div class="value" id="temp">—</div></div>
+</div>
+<div class="home-actions"><button class="primary" onclick="show('entry')">＋ บันทึกสุขภาพ</button><button class="blue" onclick="show('reportView')">📄 รายงานสุขภาพ</button></div>
+<div class="home-section-title">สถานะการแจ้งเตือน</div>
+<div class="card" style="background:#fff;border-left:4px solid #e6a23c"><div id="alerts" class="sub">ยังไม่มีการแจ้งเตือน</div></div>
+<p class="small" style="text-align:center;margin:18px 4px 0">ข้อมูลสุขภาพจัดเก็บในอุปกรณ์นี้ · ใช้ประกอบการติดตาม ไม่แทนคำแนะนำจากแพทย์</p>
+</section>
+<section id="entry" class="hidden entry-page">
+ <div class="page-intro"><span class="eyebrow">HEALTH LOG</span><h2>บันทึกข้อมูลสุขภาพ</h2><p>เลือกกรอกเฉพาะค่าที่วัดได้ในครั้งนี้ ไม่จำเป็นต้องกรอกทุกช่อง</p></div>
+ <div class="form-card bp-form"><div class="form-title"><span class="form-icon">❤️</span><div><h3>ความดันโลหิต</h3><p>ค่าจากเครื่องวัดความดัน</p></div></div><div class="field-grid"><div><label>ตัวบน (SYS) <small>mmHg</small></label><input id="sys" type="number" inputmode="decimal" placeholder="เช่น 120"></div><div><label>ตัวล่าง (DIA) <small>mmHg</small></label><input id="dia" type="number" inputmode="decimal" placeholder="เช่น 80"></div><div class="full-field"><label>ชีพจรจากเครื่องวัดความดัน <small>ครั้ง/นาที</small></label><input id="pb" type="number" inputmode="numeric" placeholder="เช่น 75"></div></div></div>
+ <div class="form-card oxygen-form"><div class="form-title"><span class="form-icon">🫁</span><div><h3>ออกซิเจนในเลือด</h3><p>ค่าจากเครื่องวัดออกซิเจนปลายนิ้ว</p></div></div><div class="field-grid"><div><label>SpO₂ <small>%</small></label><input id="sp" type="number" inputmode="decimal" placeholder="เช่น 98"></div><div><label>ชีพจร <small>ครั้ง/นาที</small></label><input id="po" type="number" inputmode="numeric" placeholder="เช่น 76"></div></div></div>
+ <div class="form-card glucose-form"><div class="form-title"><span class="form-icon">🩸</span><div><h3>น้ำตาลในเลือด</h3><p>ค่าจากเครื่องตรวจน้ำตาลปลายนิ้ว</p></div></div><label>ระดับน้ำตาล <small>mg/dL</small></label><input id="gl" type="number" inputmode="decimal" placeholder="เช่น 105"></div>
+ <div class="form-card temp-form"><div class="form-title"><span class="form-icon">🌡️</span><div><h3>อุณหภูมิร่างกาย</h3><p>ค่าจากเครื่องวัดอุณหภูมิ</p></div></div><label>อุณหภูมิ <small>°C</small></label><input id="te" type="number" step=".1" inputmode="decimal" placeholder="เช่น 36.7"></div>
+ <div class="form-card"><div class="form-title"><span class="form-icon">📝</span><div><h3>บันทึกเพิ่มเติม</h3><p>เช่น ก่อนอาหาร หลังอาหาร หลังพัก หรืออาการที่สังเกตได้</p></div></div><textarea id="note" rows="2" placeholder="พิมพ์หมายเหตุ (ถ้ามี)"></textarea></div>
+ <div class="entry-submit"><button class="primary" onclick="save()">บันทึกข้อมูลสุขภาพ</button><button class="light" style="width:100%" onclick="show('home')">ยกเลิก / กลับหน้าหลัก</button><p class="small">ข้อมูลจะถูกบันทึกไว้ในอุปกรณ์นี้ · การแจ้งเตือนเป็นเพียงการคัดกรองเบื้องต้น ไม่ใช่การวินิจฉัย</p></div>
+</section>
+<section id="reportView" class="hidden report-page">
+ <div class="page-intro"><span class="eyebrow">HEALTH REPORT</span><h2>รายงานสุขภาพ</h2><p>สรุปผลตามวันที่เลือก พร้อมแนวโน้มย้อนหลัง 7 วัน</p></div>
+ <div class="card report-controls">
+  <h3>กำหนดช่วงรายงาน</h3>
+  <label for="reportDate">เลือกวันที่</label><input id="reportDate" type="date">
+  <div class="toolbar no-print">
+   <button class="blue" type="button" onclick="renderReport()">แสดงรายงาน</button>
+   <button class="primary" type="button" onclick="printReport()">ส่งออกรายงาน A4 / PDF</button>
+  </div>
+  <p class="small no-print">รายงาน PDF จะจัดหน้า A4 พร้อมค่าล่าสุด ค่าสูงสุด ค่าต่ำสุด และกราฟแนวโน้ม 7 วัน</p>
+  
+  <div id="a4Report" style="display:none">
+   <div class="a4-head">
+    <div><h2>รายงานสรุปสุขภาพ</h2><div style="font-size:11px">My Health Record • สำหรับประกอบการพบแพทย์</div></div>
+    <div class="a4-meta"><div id="a4Date"></div><div id="a4Count"></div></div>
+   </div>
+   <div id="a4Profile" style="font-size:10px;margin:4px 0 7px"></div><div id="a4Stats" class="a4-stats"></div>
+   <div class="a4-charts">
+    <div class="a4-chart"><b>ความดันตัวบน (mmHg)</b><canvas id="a4Sys" width="600" height="115"></canvas></div>
+    <div class="a4-chart"><b>ความดันตัวล่าง (mmHg)</b><canvas id="a4Dia" width="600" height="115"></canvas></div>
+    <div class="a4-chart"><b>ชีพจรจากเครื่องวัดความดัน (ครั้ง/นาที)</b><canvas id="a4Pb" width="600" height="115"></canvas></div>
+    <div class="a4-chart"><b>ชีพจรจากเครื่องปลายนิ้ว (ครั้ง/นาที)</b><canvas id="a4Po" width="600" height="115"></canvas></div>
+    <div class="a4-chart"><b>ออกซิเจนในเลือด SpO₂ (%)</b><canvas id="a4Spo" width="600" height="115"></canvas></div>
+    <div class="a4-chart"><b>น้ำตาลในเลือด (mg/dL)</b><canvas id="a4Gl" width="600" height="115"></canvas></div>
+    <div class="a4-chart"><b>อุณหภูมิร่างกาย (°C)</b><canvas id="a4Te" width="600" height="115"></canvas></div>
+   </div>
+   <div id="a4Readings" class="a4-readings"></div>
+   <div class="a4-foot">หมายเหตุ: สรุปจากข้อมูลที่ผู้ใช้บันทึก ไม่ใช่การวินิจฉัยโรค ค่าสูงสุด/ต่ำสุดคำนวณจากรายการในวันที่เลือก กราฟแสดงแนวโน้ม 7 วันจนถึงวันที่เลือก</div>
+  </div>
+
+  <div class="report-section"><h3 id="reportHeading">สรุปข้อมูลสุขภาพ</h3><div id="dailySummary" class="report-grid"></div></div>
+  <div class="report-section"><h3>รายการวัดในวันที่เลือก</h3><div id="dailyReadings">ยังไม่มีข้อมูล</div></div>
+  <details class="trend-details"><summary>ดูกราฟแนวโน้มย้อนหลัง 7 วัน</summary><p class="small">แสดงเฉพาะค่าที่มีการบันทึกจริง</p>
+  <div class="trend-card"><b>ความดันตัวบน (mmHg)</b><canvas id="chartSys" width="700" height="180"></canvas></div>
+  <div class="trend-card"><b>ความดันตัวล่าง (mmHg)</b><canvas id="chartDia" width="700" height="180"></canvas></div>
+  <div class="trend-card"><b>ชีพจรจากเครื่องวัดความดัน (ครั้ง/นาที)</b><canvas id="chartPulse" width="700" height="180"></canvas></div>
+  <div class="trend-card"><b>SpO₂ (%)</b><canvas id="chartSpo" width="700" height="180"></canvas></div>
+  <div class="trend-card"><b>น้ำตาล (mg/dL)</b><canvas id="chartGlucose" width="700" height="180"></canvas></div>
+  <div class="trend-card"><b>อุณหภูมิ (°C)</b><canvas id="chartTemp" width="700" height="180"></canvas></div></details>
+  <p class="small">รายงานนี้เป็นข้อมูลที่ผู้ใช้บันทึกเอง ไม่ใช่การวินิจฉัยโรค โปรดให้แพทย์พิจารณาร่วมกับอาการและประวัติ</p>
+  <button class="light no-print" style="width:100%" onclick="show('home')">กลับหน้าหลัก</button>
+ </div>
+</section>
+<section id="profile" class="hidden profile-page">
+ <div class="page-intro"><span class="eyebrow">PERSONAL PROFILE</span><h2>ข้อมูลผู้ใช้งาน</h2><p>ข้อมูลพื้นฐานและประวัติสุขภาพสำหรับประกอบการติดตามและพบแพทย์</p></div>
+ <div class="form-card"><div class="form-title"><span class="form-icon">👤</span><div><h3>ข้อมูลส่วนบุคคล</h3><p>ระบุตัวตนของเจ้าของข้อมูล</p></div></div><div class="field-grid"><div><label>ชื่อ</label><input id="firstName" autocomplete="given-name" placeholder="กรอกชื่อ"></div><div><label>นามสกุล</label><input id="lastName" autocomplete="family-name" placeholder="กรอกนามสกุล"></div><div class="full-field"><label>อายุ <small>ปี</small></label><input id="age" type="number" min="1" max="120" inputmode="numeric" placeholder="เช่น 65"></div></div></div>
+ <div class="form-card"><div class="form-title"><span class="form-icon">🩺</span><div><h3>โรคประจำตัว / ภาวะสุขภาพ</h3><p>ช่วยให้มีข้อมูลประกอบการติดตามสุขภาพ</p></div></div><label>รายละเอียดโรคหรือภาวะสุขภาพ</label><textarea id="conditions" rows="3" placeholder="เช่น ความดันโลหิตสูง, เบาหวาน"></textarea></div>
+ <div class="form-card"><div class="form-title"><span class="form-icon">💊</span><div><h3>รายการยาและเวลาแจ้งเตือน</h3><p>เพิ่มยาแต่ละรายการ เลือกช่วงเวลาและตั้งเวลาเตือนได้</p></div></div>
+ <div class="med-editor"><div class="med-fields"><div class="wide"><label for="medName">ชื่อยา</label><input id="medName" placeholder="เช่น ยาความดัน"></div><div><label for="medDose">ขนาด / จำนวน</label><input id="medDose" placeholder="เช่น 1 เม็ด"></div><div><label for="medWhen">ช่วงเวลาที่กิน</label><select id="medWhen"><option value="ก่อนอาหารเช้า">ก่อนอาหารเช้า</option><option value="หลังอาหารเช้า">หลังอาหารเช้า</option><option value="ก่อนอาหารกลางวัน">ก่อนอาหารกลางวัน</option><option value="หลังอาหารกลางวัน">หลังอาหารกลางวัน</option><option value="ก่อนอาหารเย็น">ก่อนอาหารเย็น</option><option value="หลังอาหารเย็น">หลังอาหารเย็น</option><option value="ก่อนนอน">ก่อนนอน</option><option value="ตามแพทย์สั่ง">ตามแพทย์สั่ง</option></select></div><div><label for="medTime">เวลาแจ้งเตือน</label><input id="medTime" type="time" value="08:00"></div><div><label for="medNote">คำแนะนำ (ถ้ามี)</label><input id="medNote" placeholder="เช่น พร้อมอาหาร"></div></div><button class="blue" style="width:100%;margin-top:8px" type="button" onclick="addMedication()">＋ เพิ่มรายการยา</button></div>
+ <div id="medicationList" class="med-list"></div><p class="small">เปิดการแจ้งเตือนในเมนูตั้งค่าและอนุญาตเบราว์เซอร์ก่อนใช้งาน ระบบจะแจ้งเตือนเมื่อเปิดแอปอยู่</p>
+ <label for="medications">บันทึกยาเดิม / รายละเอียดเพิ่มเติม (ถ้ามี)</label><textarea id="medications" rows="2" placeholder="รายละเอียดการรักษาเพิ่มเติม"></textarea></div>
+ <div class="entry-submit"><button class="primary" onclick="saveProfile()">บันทึกข้อมูลผู้ใช้งาน</button><button class="light" style="width:100%" onclick="show('home')">กลับหน้าหลัก</button><p class="small">🔒 ข้อมูลนี้เก็บไว้ในเบราว์เซอร์ของอุปกรณ์นี้ ไม่ได้ส่งขึ้นเซิร์ฟเวอร์</p></div>
+</section><section id="history" class="hidden"><div class="card"><h2>ประวัติสุขภาพ</h2><p class="small">แยกสีแต่ละค่า เพื่อให้อ่านง่ายและดูย้อนหลังได้สะดวก</p><div id="list">ยังไม่มีข้อมูล</div><button class="light" onclick="show('home')">กลับหน้าหลัก</button></div></section>
+<section id="settings" class="hidden settings-page">
+ <div class="page-intro"><span class="eyebrow">ALERT SETTINGS</span><h2>ตั้งค่าการแจ้งเตือน</h2><p>กำหนดเกณฑ์เตือนสุขภาพให้เห็นชัดเจนและปรับได้สะดวก</p></div>
+ <div class="settings-card">
+  <div class="settings-title"><span class="settings-icon">❤️</span><div><h3>เกณฑ์แจ้งเตือนความดัน</h3><p>Blood pressure · mmHg</p></div></div>
+  <div class="settings-grid">
+   <div class="settings-field"><label for="bpSysHigh">ตัวบนสูงตั้งแต่ (SYS)</label><input id="bpSysHigh" type="number" value="140"></div>
+   <div class="settings-field"><label for="bpDiaHigh">ตัวล่างสูงตั้งแต่ (DIA)</label><input id="bpDiaHigh" type="number" value="90"></div>
+   <div class="settings-field"><label for="bpSysLow">ตัวบนต่ำกว่า (SYS)</label><input id="bpSysLow" type="number" value="90"></div>
+   <div class="settings-field"><label for="bpDiaLow">ตัวล่างต่ำกว่า (DIA)</label><input id="bpDiaLow" type="number" value="60"></div>
+  </div><p class="settings-hint">ค่าเริ่มต้นเป็นเกณฑ์เตือนเบื้องต้น ควรปรับตามคำแนะนำของแพทย์หรือแผนการดูแลเฉพาะบุคคล</p>
+ </div>
+ <div class="settings-card">
+  <div class="settings-title"><span class="settings-icon">🫁</span><div><h3>เกณฑ์แจ้งเตือนค่าออกซิเจนและชีพจร</h3><p>SpO₂ and pulse rate</p></div></div>
+  <div class="settings-grid">
+   <div class="settings-field"><label for="spoLimit">SpO₂ ต่ำกว่า (%)</label><input id="spoLimit" type="number" value="92"></div>
+   <div class="settings-field"><label for="pulseLow">ชีพจรต่ำกว่า (ครั้ง/นาที)</label><input id="pulseLow" type="number" value="50"></div>
+   <div class="settings-field"><label for="pulseHigh">ชีพจรสูงกว่า (ครั้ง/นาที)</label><input id="pulseHigh" type="number" value="120"></div>
+  </div><p class="settings-hint">การแจ้งเตือนเป็นเพียงสัญญาณคัดกรองเบื้องต้น ไม่ใช่การวินิจฉัยโรค หากมีอาการผิดปกติรุนแรงควรรีบขอความช่วยเหลือทางการแพทย์</p>
+ </div>
+ <div class="settings-card">
+  <div class="settings-title"><span class="settings-icon">🔔</span><div><h3>การแจ้งเตือนบนอุปกรณ์</h3><p>อนุญาตให้แอปส่งข้อความเตือน</p></div></div>
+  <div class="permission-state"><span id="permissionDot" class="permission-dot"></span><span id="permissionStatus">กำลังตรวจสอบสถานะการแจ้งเตือน…</span></div>
+  <button class="blue" style="width:100%;font-size:15px" onclick="requestNotify()">เปิด / อนุญาตการแจ้งเตือน</button>
+  <p class="settings-hint">การเตือนกินยาจากเว็บทำงานเมื่อแอปหรือหน้าเว็บเปิดอยู่เป็นหลัก อาจไม่แจ้งเตือนเมื่อปิดแอปหรือระบบพักการทำงาน</p>
+ </div>
+ <div class="security-card">
+  <h3>🔐 ความปลอดภัยและข้อมูลส่วนตัว</h3>
+  <span class="privacy-badge">ออฟไลน์เป็นหลัก · เก็บข้อมูลในอุปกรณ์นี้</span>
+  <p>แอปไม่ส่งข้อมูลสุขภาพไปยังเซิร์ฟเวอร์หรือระบบคลาวด์ การสำรองข้อมูลจะบันทึกเป็นไฟล์ลงในอุปกรณ์ที่ผู้ใช้เลือกเอง</p>
+  <div class="security-actions"><button class="blue" onclick="setupPin()">ตั้ง / เปลี่ยน PIN</button><button class="light" onclick="lockApp()">ล็อกแอปทันที</button></div>
+  <div class="security-actions"><button class="primary" onclick="exportBackup()">สำรองข้อมูลทั้งหมด</button><button class="light" onclick="document.getElementById('restoreFile').click()">กู้คืนจากไฟล์</button></div>
+  <input id="restoreFile" type="file" accept="application/json,.json" style="display:none" onchange="restoreBackup(event)">
+  <p>เก็บไฟล์สำรองไว้ในที่ปลอดภัย และอย่าแชร์ให้ผู้อื่น ไฟล์สำรองมีข้อมูลสุขภาพส่วนบุคคล</p>
+  <div class="offline-status">✓ โหมดออฟไลน์: เมื่อเปิดแอปและแคชไฟล์ครบแล้ว สามารถใช้งานโดยไม่เชื่อมต่ออินเทอร์เน็ตได้</div>
+ </div>
+ <div class="security-card"><h3>🛡️ ความเป็นส่วนตัว</h3><p>ข้อมูลโปรไฟล์ ประวัติสุขภาพ รายการยา และเกณฑ์แจ้งเตือนเก็บไว้ในพื้นที่จัดเก็บของเบราว์เซอร์บนอุปกรณ์นี้เท่านั้น ไม่มีระบบบัญชีผู้ใช้ ไม่มีการซิงก์ข้ามอุปกรณ์ และไม่มีการส่งข้อมูลไปยังคลาวด์</p><p>การล้างข้อมูลเว็บไซต์ ถอนการติดตั้งเบราว์เซอร์ หรือเปลี่ยนอุปกรณ์ อาจทำให้ข้อมูลสูญหาย ควรสำรองข้อมูลเป็นระยะ</p></div>
+ <div class="settings-actions"><button class="primary" onclick="saveSettings()">บันทึกการตั้งค่า</button><button class="light" style="width:100%" onclick="show('home')">กลับหน้าหลัก</button></div>
+</section>
+<section id="developer" class="hidden developer-page">
+ <div class="page-intro"><span class="eyebrow">APPLICATION INFORMATION</span><h2>ผู้พัฒนาแอปพลิเคชัน</h2><p>ข้อมูลผู้จัดทำและหน่วยงาน</p></div>
+ <div class="developer-card"><div class="developer-avatar">T</div><p class="developer-name">นายแทน นามวงค์</p><div class="developer-role">ผู้ช่วยพยาบาล</div><div class="developer-unit">หอผู้ป่วยโรคหลอดเลือดสมอง</div><div class="developer-note">My Health Record<br>แอปพลิเคชันสำหรับบันทึกและติดตามข้อมูลสุขภาพส่วนบุคคล</div></div>
+ <button class="light" style="width:100%" onclick="show('home')">กลับหน้าหลัก</button>
+</section>
+
+</main>
+<script>
+const $=id=>document.getElementById(id); let records=JSON.parse(localStorage.getItem('records')||'[]'); records=records.map((r,i)=>({...r,id:r.id||('legacy-'+i+'-'+String(r.iso||''))})); localStorage.setItem('records',JSON.stringify(records));
+$('headerDate').textContent=new Date().toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+function show(id){['home','entry','history','settings','reportView','profile','developer'].forEach(x=>$(x).classList.toggle('hidden',x!==id));if(id==='history')renderHistory();if(id==='profile'){loadProfile();renderMedications();}if(id==='settings'){loadLimits();updateNotificationStatus();}if(id==='home')renderHome();if(id==='reportView'){if(!$('reportDate').value)$('reportDate').value=localDateKey(new Date());renderReport();}}
+function num(id){return $(id).value===''?null:Number($(id).value)}
+function alertMsg(msg){
+ $('alerts').innerHTML='<span class="bad">🔔 '+msg+'</span>';
+ try {
+   const Ctx=window.AudioContext||window.webkitAudioContext;
+   if(Ctx){const ctx=new Ctx(), osc=ctx.createOscillator(), gain=ctx.createGain();osc.connect(gain);gain.connect(ctx.destination);osc.frequency.value=880;gain.gain.value=.12;osc.start();osc.stop(ctx.currentTime+.35);}
+ } catch(e){}
+ if(window.AndroidBridge) AndroidBridge.notifyHealth('แจ้งเตือนสุขภาพ',msg);
+ else if('Notification' in window && Notification.permission==='granted') new Notification('แจ้งเตือนสุขภาพ',{body:msg});
+}
+function loadLimits(){const d={spo:92,lo:50,hi:120,bpSysHigh:140,bpDiaHigh:90,bpSysLow:90,bpDiaLow:60};const v={...d,...JSON.parse(localStorage.getItem('limits')||'{}')};Object.entries({spo:'spoLimit',lo:'pulseLow',hi:'pulseHigh',bpSysHigh:'bpSysHigh',bpDiaHigh:'bpDiaHigh',bpSysLow:'bpSysLow',bpDiaLow:'bpDiaLow'}).forEach(([k,id])=>$(id).value=v[k]);}
+function saveSettings(){const v={spo:Number($('spoLimit').value)||92,lo:Number($('pulseLow').value)||50,hi:Number($('pulseHigh').value)||120,bpSysHigh:Number($('bpSysHigh').value)||140,bpDiaHigh:Number($('bpDiaHigh').value)||90,bpSysLow:Number($('bpSysLow').value)||90,bpDiaLow:Number($('bpDiaLow').value)||60};if(v.bpSysLow>=v.bpSysHigh||v.bpDiaLow>=v.bpDiaHigh){alert('ค่าเกณฑ์ต่ำต้องน้อยกว่าค่าเกณฑ์สูง');return;}localStorage.setItem('limits',JSON.stringify(v));alert('บันทึกการตั้งค่าแล้ว');}
+function loadProfile(){const p=JSON.parse(localStorage.getItem('profile')||'{}');$('firstName').value=p.firstName||'';$('lastName').value=p.lastName||'';$('age').value=p.age||'';$('conditions').value=p.conditions||'';$('medications').value=p.medications||'';if(!Array.isArray(p.medicationItems))p.medicationItems=[];localStorage.setItem('medicationItems',JSON.stringify(p.medicationItems));renderMedications();}
+function getMeds(){try{return JSON.parse(localStorage.getItem('medicationItems')||'[]')}catch(e){return []}}
+function saveMeds(items){localStorage.setItem('medicationItems',JSON.stringify(items));const p=JSON.parse(localStorage.getItem('profile')||'{}');p.medicationItems=items;localStorage.setItem('profile',JSON.stringify(p));renderMedications();}
+function addMedication(){const name=$('medName').value.trim(),dose=$('medDose').value.trim(),time=$('medTime').value,when=$('medWhen').value,note=$('medNote').value.trim();if(!name||!time){alert('กรุณากรอกชื่อยาและเวลาแจ้งเตือน');return;}const items=getMeds();items.push({id:String(Date.now())+Math.random().toString(16).slice(2),name,dose,time,when,note,enabled:true});saveMeds(items);$('medName').value='';$('medDose').value='';$('medNote').value='';alert('เพิ่มรายการยาแล้ว');}
+function renderMedications(){const el=$('medicationList');if(!el)return;const items=getMeds();el.innerHTML=items.length?items.map(m=>`<article class="med-item"><div class="med-item-head"><div><h4>💊 ${escapeHTML(m.name||'ยา')}</h4><div class="small">${escapeHTML(m.dose||'ไม่ระบุขนาด')} · ${escapeHTML(m.when||'')}</div></div><label style="display:flex;align-items:center;gap:5px;font-size:13px;margin:0"><input type="checkbox" style="width:auto;margin:0" ${m.enabled!==false?'checked':''} onchange="toggleMedication('${m.id}',this.checked)"> เตือน</label></div><span class="med-time">⏰ ${escapeHTML(m.time||'--:--')}</span>${m.note?`<div class="small" style="margin-top:6px">${escapeHTML(m.note)}</div>`:''}<div class="med-actions"><button class="light" onclick="editMedication('${m.id}')">แก้ไข</button><button class="light" onclick="deleteMedication('${m.id}')">ลบ</button></div></article>`).join(''):'<div class="med-empty">ยังไม่มีรายการยา · กรอกข้อมูลด้านบนเพื่อเพิ่มยา</div>';}
+function escapeHTML(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function toggleMedication(id,on){const a=getMeds();const m=a.find(x=>x.id===id);if(m)m.enabled=on;saveMeds(a);}
+function deleteMedication(id){if(!confirm('ต้องการลบรายการยานี้หรือไม่?'))return;saveMeds(getMeds().filter(x=>x.id!==id));}
+function editMedication(id){const a=getMeds(),m=a.find(x=>x.id===id);if(!m)return;$('medName').value=m.name||'';$('medDose').value=m.dose||'';$('medTime').value=m.time||'08:00';$('medWhen').value=m.when||'ตามแพทย์สั่ง';$('medNote').value=m.note||'';saveMeds(a.filter(x=>x.id!==id));$('medName').focus();}
+function saveProfile(){const p={firstName:$('firstName').value.trim(),lastName:$('lastName').value.trim(),age:$('age').value,conditions:$('conditions').value.trim(),medications:$('medications').value.trim(),medicationItems:getMeds()};localStorage.setItem('profile',JSON.stringify(p));renderHome();alert('บันทึกข้อมูลผู้ใช้งานแล้ว');show('home');}
+
+function updateNotificationStatus(){const supported=('Notification' in window),permission=supported?Notification.permission:'unsupported';const dot=$('permissionDot'),label=$('permissionStatus');if(!dot||!label)return;dot.classList.toggle('on',permission==='granted');label.textContent=permission==='granted'?'เปิดใช้งานการแจ้งเตือนแล้ว':permission==='denied'?'ถูกปิดกั้นการแจ้งเตือน กรุณาอนุญาตในการตั้งค่าเว็บไซต์':permission==='unsupported'?'เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือน':'ยังไม่ได้อนุญาตการแจ้งเตือน';}
+function requestNotify(){if(!('Notification' in window)){alert('เบราว์เซอร์นี้ยังไม่รองรับการแจ้งเตือน');updateNotificationStatus();return;}Notification.requestPermission().then(p=>{updateNotificationStatus();alert(p==='granted'?'เปิดการแจ้งเตือนแล้ว':'ยังไม่ได้อนุญาตการแจ้งเตือน');});}
+function checkMedicationReminders(){const now=new Date(),hh=String(now.getHours()).padStart(2,'0'),mm=String(now.getMinutes()).padStart(2,'0'),day=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0'),key=day+' '+hh+':'+mm;getMeds().filter(m=>m.enabled!==false&&m.time===hh+':'+mm).forEach(m=>{const sent=JSON.parse(localStorage.getItem('medReminderSent')||'{}'),id=key+' '+m.id;if(sent[id])return;sent[id]=true;localStorage.setItem('medReminderSent',JSON.stringify(sent));const title='ถึงเวลากินยา';const body=(m.name||'ยา')+(m.dose?' · '+m.dose:'')+' · '+(m.when||'');if(window.AndroidBridge&&AndroidBridge.notifyHealth)AndroidBridge.notifyHealth(title,body);else if('Notification'in window&&Notification.permission==='granted'){if(navigator.serviceWorker&&navigator.serviceWorker.controller){navigator.serviceWorker.ready.then(reg=>reg.showNotification(title,{body,tag:id,icon:'./icons/icon-192.png'})).catch(()=>new Notification(title,{body}));}else new Notification(title,{body});}else{$('alerts').textContent='⏰ ถึงเวลากินยา: '+body;}});}
+setInterval(checkMedicationReminders,15000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkMedicationReminders();});checkMedicationReminders();
+function save(){
+ let now=new Date(); let r={id:'rec-'+Date.now()+'-'+Math.random().toString(16).slice(2),iso:now.toISOString(),date:now.toLocaleString('th-TH'),sys:num('sys'),dia:num('dia'),pb:num('pb'),sp:num('sp'),po:num('po'),gl:num('gl'),te:num('te'),note:$('note').value};
+ if(['sys','dia','pb','sp','po','gl','te'].every(k=>r[k]===null)){alert('กรุณากรอกค่าอย่างน้อย 1 รายการ');return;}
+ const ranges={sys:[50,300,'ความดันตัวบน'],dia:[30,200,'ความดันตัวล่าง'],pb:[20,250,'ชีพจรจากเครื่องวัดความดัน'],sp:[50,100,'SpO₂'],po:[20,250,'ชีพจรจากเครื่องปลายนิ้ว'],gl:[20,800,'น้ำตาลในเลือด'],te:[25,45,'อุณหภูมิ']}; for(const [k,[lo,hi,label]] of Object.entries(ranges)){if(r[k]!==null&&(!Number.isFinite(r[k])||r[k]<lo||r[k]>hi)){alert(label+' ต้องอยู่ระหว่าง '+lo+' ถึง '+hi+' กรุณาตรวจสอบอีกครั้ง');return;}} if((r.sys===null)!==(r.dia===null)){alert('กรุณากรอกความดันตัวบนและตัวล่างให้ครบทั้งคู่');return;}
+ records.unshift(r);localStorage.setItem('records',JSON.stringify(records));
+ let lim=JSON.parse(localStorage.getItem('limits')||'{"spo":92,"lo":50,"hi":120}'), alerts=[];
+ if(r.sys!==null&&r.dia!==null){
+  const sh=lim.bpSysHigh||140,dh=lim.bpDiaHigh||90,sl=lim.bpSysLow||90,dl=lim.bpDiaLow||60;
+  if(r.sys>=180||r.dia>=120)alerts.push('ความดันสูงมาก ('+r.sys+'/'+r.dia+' mmHg) ให้นั่งพักแล้ววัดซ้ำ หากยังสูงมากหรือมีเจ็บหน้าอก หายใจลำบาก แขนขาอ่อนแรง/พูดไม่ชัด ให้โทร 1669');
+  else if(r.sys>=sh||r.dia>=dh)alerts.push('ความดันสูงกว่าค่าเตือน ('+r.sys+'/'+r.dia+' mmHg) นั่งพัก 5 นาทีแล้ววัดซ้ำ และปรึกษาแพทย์หากยังสูง');
+  else if(r.sys<sl||r.dia<dl)alerts.push('ความดันต่ำกว่าค่าเตือน ('+r.sys+'/'+r.dia+' mmHg) หากมีหน้ามืด เป็นลม หรืออ่อนเพลียมาก ควรรับการประเมินทางการแพทย์');
+ }
+ if(r.sp!==null&&r.sp<lim.spo)alerts.push('ออกซิเจนในเลือดต่ำ ('+r.sp+'%)');
+ [r.pb,r.po].filter(v=>v!==null).forEach(v=>{if(v<lim.lo||v>lim.hi)alerts.push('ชีพจรอยู่นอกช่วงที่ตั้งไว้ ('+v+' ครั้ง/นาที)');});
+ if(r.te!==null&&r.te>=38)alerts.push('อุณหภูมิสูง อาจมีไข้ ('+r.te+' °C)');
+ if(r.gl!==null&&(r.gl<70||r.gl>=250))alerts.push('น้ำตาลในเลือดอยู่นอกเกณฑ์คัดกรอง ('+r.gl+' mg/dL) โปรดพิจารณาเวลาอาหารและคำแนะนำแพทย์');
+ if(alerts.length)alertMsg(alerts.join('；'));else $('alerts').textContent='บันทึกล่าสุดยังไม่พบเงื่อนไขแจ้งเตือนตามค่าที่ตั้งไว้';
+ ['sys','dia','pb','sp','po','gl','te','note'].forEach(id=>$(id).value='');renderHome();show('home');
+}
+
+// Local-only backup, record editing and PIN protection
+function editRecord(id){const i=records.findIndex(r=>r.id===id);if(i<0)return;const r=records[i];const fields=[['sys','ความดันตัวบน'],['dia','ความดันตัวล่าง'],['pb','ชีพจรเครื่องวัดความดัน'],['sp','SpO₂'],['po','ชีพจรปลายนิ้ว'],['gl','น้ำตาล'],['te','อุณหภูมิ']];for(const [k,label] of fields){const v=prompt('แก้ไข'+label+' (เว้นว่างหากไม่มีค่า)',r[k]??'');if(v===null)return;r[k]=v.trim()===''?null:Number(v);if(r[k]!==null&&!Number.isFinite(r[k])){alert('กรุณากรอกเป็นตัวเลข');return;}}const note=prompt('แก้ไขหมายเหตุ',r.note||'');if(note===null)return;r.note=note;records[i]=r;localStorage.setItem('records',JSON.stringify(records));renderHistory();renderHome();alert('แก้ไขรายการแล้ว');}
+function deleteRecord(id){if(!confirm('ยืนยันลบรายการสุขภาพนี้? การลบไม่สามารถย้อนกลับได้'))return;records=records.filter(r=>r.id!==id);localStorage.setItem('records',JSON.stringify(records));renderHistory();renderHome();}
+function exportBackup(){const keys=['records','profile','medicationItems','medReminderSent','limits'];const data={app:'My Health Record',version:8,createdAt:new Date().toISOString(),data:{}};keys.forEach(k=>{const v=localStorage.getItem(k);if(v!==null)data.data[k]=JSON.parse(v)});const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='MyHealthRecord-Backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+function restoreBackup(ev){const file=ev.target.files&&ev.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const b=JSON.parse(reader.result);if(!b||b.app!=='My Health Record'||!b.data||!Array.isArray(b.data.records))throw new Error('รูปแบบไฟล์ไม่ถูกต้อง');if(!confirm('กู้คืนข้อมูลจากไฟล์นี้หรือไม่? ข้อมูลปัจจุบันในอุปกรณ์จะถูกแทนที่'))return;['records','profile','medicationItems','medReminderSent','limits'].forEach(k=>{if(Object.prototype.hasOwnProperty.call(b.data,k))localStorage.setItem(k,JSON.stringify(b.data[k]));else localStorage.removeItem(k)});records=JSON.parse(localStorage.getItem('records')||'[]');alert('กู้คืนข้อมูลเรียบร้อยแล้ว');location.reload();}catch(e){alert('ไม่สามารถกู้คืนได้: '+e.message)}finally{ev.target.value='';}};reader.readAsText(file);}
+async function pinHash(pin,salt){const bytes=new TextEncoder().encode(salt+':'+pin);if(window.crypto&&crypto.subtle){const digest=await crypto.subtle.digest('SHA-256',bytes);return Array.from(new Uint8Array(digest)).map(x=>x.toString(16).padStart(2,'0')).join('')}return btoa(unescape(encodeURIComponent(salt+':'+pin)));}
+async function setupPin(){const pin=prompt('ตั้งรหัส PIN 6 หลัก (กด ยกเลิก หากไม่ต้องการใช้)');if(pin===null)return;if(!/^\d{6}$/.test(pin)){alert('กรุณาตั้ง PIN เป็นตัวเลข 6 หลัก');return;}const again=prompt('กรอกรหัส PIN ซ้ำอีกครั้ง');if(again!==pin){alert('รหัส PIN ไม่ตรงกัน');return;}const salt=window.crypto&&window.crypto.getRandomValues?Array.from(window.crypto.getRandomValues(new Uint8Array(16))).map(x=>x.toString(16).padStart(2,'0')).join(''):String(Date.now());localStorage.setItem('appPin',JSON.stringify({salt,hash:await pinHash(pin,salt)}));alert('ตั้ง PIN แล้ว จะขอ PIN เมื่อเปิดแอปครั้งถัดไป');}
+function lockApp(){showPinGate();}
+function showPinGate(){if(!localStorage.getItem('appPin')||document.getElementById('pinGate'))return;const d=document.createElement('div');d.id='pinGate';d.className='pin-overlay';d.innerHTML='<div class="pin-box"><h2>🔐 My Health Record</h2><p>กรอกรหัส PIN 6 หลักเพื่อเปิดข้อมูลสุขภาพ</p><input id="unlockPin" type="password" inputmode="numeric" maxlength="6" autocomplete="off"><button class="primary" id="unlockBtn">ปลดล็อก</button><p id="pinError" style="color:#b42318"></p></div>';document.body.appendChild(d);document.getElementById('unlockBtn').onclick=async()=>{const saved=JSON.parse(localStorage.getItem('appPin')||'{}'),v=document.getElementById('unlockPin').value;if(await pinHash(v,saved.salt)===saved.hash)d.remove();else document.getElementById('pinError').textContent='PIN ไม่ถูกต้อง'};document.getElementById('unlockPin').focus();}
+window.addEventListener('load',()=>{if(localStorage.getItem('appPin'))showPinGate()});document.addEventListener('visibilitychange',()=>{if(document.hidden&&localStorage.getItem('appPin'))window.__mhrHiddenAt=Date.now();else if(!document.hidden&&window.__mhrHiddenAt&&Date.now()-window.__mhrHiddenAt>60000){const g=document.getElementById('pinGate');if(g)g.remove();showPinGate();}});
+function localDateKey(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function recordDateKey(r){
+ if(r.iso){const d=new Date(r.iso);if(!isNaN(d))return localDateKey(d);}
+ const m=(r.date||'').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+ if(m){let y=Number(m[3]);if(y>2400)y-=543;return `${y}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;}
+ return '';
+}
+function renderReport(){
+ const key=$('reportDate').value||localDateKey(new Date()), rows=records.filter(r=>recordDateKey(r)===key);
+ const last=f=>{const a=rows.filter(r=>r[f]!==null&&r[f]!==undefined);return a.length?a[a.length-1][f]:'—';};
+ $('reportHeading').textContent='สรุปข้อมูลสุขภาพ วันที่ '+new Date(key+'T12:00:00').toLocaleDateString('th-TH',{dateStyle:'long'});
+ const bp=rows.some(r=>r.sys!==null&&r.dia!==null)?last('sys')+' / '+last('dia')+' mmHg':'—';
+ const tiles=[['ความดันล่าสุด',bp],['ชีพจรจากเครื่องวัดความดัน',last('pb')+' ครั้ง/นาที'],['ชีพจรจากเครื่องปลายนิ้ว',last('po')+' ครั้ง/นาที'],['ออกซิเจนในเลือด',last('sp')+' %'],['น้ำตาลในเลือด',last('gl')+' mg/dL'],['อุณหภูมิ',last('te')+' °C']];
+ $('dailySummary').innerHTML=tiles.map(a=>`<div class="report-tile"><span class="sub">${a[0]}</span><b>${a[1]}</b></div>`).join('');
+ const val=v=>v===null||v===undefined?'—':v;
+ $('dailyReadings').innerHTML=rows.length?'<div class="history-list">'+rows.map(r=>{const dt=new Date(r.iso||'');const tm=!isNaN(dt)?dt.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}):'';const box=(label,v,unit)=>`<div class="report-value"><span>${label}</span><b>${val(v)} <small style="font-size:12px;font-weight:500">${unit}</small></b></div>`;return `<article class="report-reading"><div class="report-reading-head"><span>📅 ${escapeHTML(r.date||'วันที่ไม่ระบุ')}</span><span class="small">${tm}</span></div><div class="report-reading-grid">${box('❤️ ความดันโลหิต',val(r.sys)+' / '+val(r.dia),'mmHg')}${box('💓 ชีพจรเครื่องวัดความดัน',r.pb,'ครั้ง/นาที')}${box('🫁 SpO₂',r.sp,'%')}${box('💓 ชีพจรปลายนิ้ว',r.po,'ครั้ง/นาที')}${box('🩸 น้ำตาล',r.gl,'mg/dL')}${box('🌡️ อุณหภูมิ',r.te,'°C')}</div>${r.note?`<div class="history-note">📝 ${escapeHTML(r.note)}</div>`:''}</article>`}).join('')+'</div>':'<div class="history-empty">ไม่มีข้อมูลในวันที่เลือก</div>';
+ const end=new Date(key+'T12:00:00'),days=[];
+ for(let i=6;i>=0;i--){let d=new Date(end);d.setDate(d.getDate()-i);days.push({key:localDateKey(d),label:d.toLocaleDateString('th-TH',{day:'numeric',month:'short'})});}
+ [['chartSys','sys'],['chartDia','dia'],['chartPulse','pb'],['chartSpo','sp'],['chartGlucose','gl'],['chartTemp','te']].forEach(([id,f])=>{
+  const values=days.map(day=>{const a=records.filter(r=>recordDateKey(r)===day.key&&r[f]!==null&&r[f]!==undefined);return a.length?Number(a[a.length-1][f]):null;});
+  drawMiniChart($(id),days.map(d=>d.label),values);
+ });
+}
+function drawMiniChart(c,labels,values){
+ const ctx=c.getContext('2d'),w=c.width,h=c.height;ctx.clearRect(0,0,w,h);const good=values.filter(v=>v!==null&&Number.isFinite(v));
+ ctx.font='16px Arial';ctx.strokeStyle='#e3e9f0';
+ for(let i=0;i<4;i++){let y=15+i*(h-42)/3;ctx.beginPath();ctx.moveTo(42,y);ctx.lineTo(w-10,y);ctx.stroke();}
+ if(!good.length){ctx.fillStyle='#586779';ctx.fillText('ยังไม่มีข้อมูล',55,95);return;}
+ let lo=Math.min(...good),hi=Math.max(...good);if(lo===hi){lo-=1;hi+=1;}
+ const px=i=>50+i*(w-75)/Math.max(1,labels.length-1),py=v=>h-28-(v-lo)/(hi-lo)*(h-58);
+ ctx.strokeStyle='#0875d1';ctx.lineWidth=4;ctx.beginPath();let started=false;
+ values.forEach((v,i)=>{if(v===null){started=false;return;}if(!started){ctx.moveTo(px(i),py(v));started=true;}else ctx.lineTo(px(i),py(v));});ctx.stroke();
+ values.forEach((v,i)=>{if(v===null)return;ctx.fillStyle='#0875d1';ctx.beginPath();ctx.arc(px(i),py(v),5,0,Math.PI*2);ctx.fill();ctx.fillStyle='#263548';ctx.fillText(String(v),px(i)-10,py(v)-9);});
+ labels.forEach((l,i)=>{ctx.fillStyle='#526174';ctx.fillText(l,px(i)-12,h-6);});
+}
+
+function buildA4Report(){
+ const key=$('reportDate').value||localDateKey(new Date());
+ const rows=records.filter(r=>recordDateKey(r)===key);
+ const dayLabel=new Date(key+'T12:00:00').toLocaleDateString('th-TH',{dateStyle:'long'});
+ const prof=JSON.parse(localStorage.getItem('profile')||'{}');const pname=[prof.firstName,prof.lastName].filter(Boolean).join(' ')||'ไม่ระบุ';$('a4Profile').textContent='ผู้ใช้งาน: '+pname+(prof.age?' • อายุ '+prof.age+' ปี':'')+(prof.conditions?' • โรค/ภาวะ: '+prof.conditions:'')+(prof.medications?' • ยา: '+prof.medications:'');
+ $('a4Date').textContent='วันที่ '+dayLabel;
+ $('a4Count').textContent='จำนวนรายการวัด: '+rows.length;
+ const specs=[
+  ['ความดันตัวบน','sys',' mmHg'],['ความดันตัวล่าง','dia',' mmHg'],
+  ['ชีพจรจากเครื่องวัดความดัน','pb',' ครั้ง/นาที'],
+  ['ชีพจรจากเครื่องปลายนิ้ว','po',' ครั้ง/นาที'],
+  ['SpO₂','sp',' %'],['น้ำตาล','gl',' mg/dL'],['อุณหภูมิ','te',' °C']
+ ];
+ $('a4Stats').innerHTML=specs.map(([label,f,unit])=>{
+  const vals=rows.map(r=>r[f]).filter(v=>v!==null&&v!==undefined&&Number.isFinite(Number(v))).map(Number);
+  const latest=vals.length?vals[vals.length-1]+unit:'—';
+  const high=vals.length?Math.max(...vals)+unit:'—';
+  const low=vals.length?Math.min(...vals)+unit:'—';
+  return `<div class="a4-stat"><strong>${label}</strong><div class="latest">${latest}</div><div class="range">สูงสุด ${high} · ต่ำสุด ${low}</div></div>`;
+ }).join('');
+ const end=new Date(key+'T12:00:00'),days=[];
+ for(let i=6;i>=0;i--){let d=new Date(end);d.setDate(d.getDate()-i);days.push({key:localDateKey(d),label:d.toLocaleDateString('th-TH',{day:'numeric',month:'short'})});}
+ const charts=[['a4Sys','sys'],['a4Dia','dia'],['a4Pb','pb'],['a4Po','po'],['a4Spo','sp'],['a4Gl','gl'],['a4Te','te']];
+ charts.forEach(([id,f])=>{
+  const vals=days.map(day=>{const a=records.filter(r=>recordDateKey(r)===day.key&&r[f]!==null&&r[f]!==undefined);return a.length?Number(a[a.length-1][f]):null;});
+  drawMiniChart($(id),days.map(d=>d.label),vals);
+ });
+ $('a4Readings').innerHTML=rows.length
+  ? '<b>รายการวัดในวันที่เลือก</b><br>'+rows.map(r=>
+    `${r.date}: BP ${r.sys??'—'}/${r.dia??'—'} mmHg, ชีพจร ${r.pb??'—'} / ${r.po??'—'}, SpO₂ ${r.sp??'—'}%, น้ำตาล ${r.gl??'—'} mg/dL, อุณหภูมิ ${r.te??'—'}°C${r.note?' · '+r.note:''}`
+   ).join('<br>')
+  : '<b>รายการวัดในวันที่เลือก:</b> ไม่มีข้อมูล';
+}
+function printReport(){
+ renderReport();
+ buildA4Report();
+
+}
+
+
+function renderHome(){const p=JSON.parse(localStorage.getItem('profile')||'{}');const full=[p.firstName,p.lastName].filter(Boolean).join(' ');$('homeProfile').textContent=full?(full+(p.age?' • อายุ '+p.age+' ปี':'')):'ยังไม่ได้กรอกข้อมูลผู้ใช้งาน';let r=records[0];if(!r)return;$('bp').textContent=r.sys!==null&&r.dia!==null?r.sys+' / '+r.dia:'—';$('pulseBp').textContent=r.pb??'—';$('spo').textContent=r.sp!==null?r.sp+'%':'—';$('spoPulse').textContent='ชีพจร '+(r.po??'—')+' ครั้ง/นาที';$('sugar').textContent=r.gl??'—';$('temp').textContent=r.te!==null?r.te+' °C':'—';if(r.sys!==null&&r.dia!==null){const l={bpSysHigh:140,bpDiaHigh:90,bpSysLow:90,bpDiaLow:60,...JSON.parse(localStorage.getItem('limits')||'{}')};let t='ค่าความดันล่าสุด';if(r.sys>=180||r.dia>=120)t='⚠️ สูงมาก — วัดซ้ำหลังพัก และประเมินอาการ';else if(r.sys>=l.bpSysHigh||r.dia>=l.bpDiaHigh)t='⚠️ สูงกว่าค่าเตือน';else if(r.sys<l.bpSysLow||r.dia<l.bpDiaLow)t='⚠️ ต่ำกว่าค่าเตือน';else t='อยู่ในช่วงเกณฑ์เตือนที่ตั้งไว้';$('bpstatus').textContent=t;}}
+
+
+function renderHistory(){
+ const value=(v)=>v===null||v===undefined||v===''?'—':v;
+ const metric=(cls,label,val,unit)=>`<div class="metric-box ${cls}"><div class="metric-label">${label}</div><div class="metric-value">${val} <span class="metric-unit">${unit}</span></div></div>`;
+ $('list').innerHTML=records.length
+ ? '<div class="history-list">'+records.map(r=>{
+   const dt=new Date(r.iso||'');
+   const time=!isNaN(dt)?dt.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}):'';
+   return `<article class="history-record">
+    <div class="history-record-head"><div class="history-record-date">📅 ${r.date||'วันที่ไม่ระบุ'}</div><div class="history-record-time">${time}</div></div>
+    <div class="history-metrics">
+     ${metric('metric-bp','❤️ ความดันโลหิต',value(r.sys)+' / '+value(r.dia),'mmHg')}
+     ${metric('metric-pulse-bp','ชีพจรจากเครื่องวัดความดัน',value(r.pb),'ครั้ง/นาที')}
+     ${metric('metric-spo','🫁 ออกซิเจนในเลือด (SpO₂)',value(r.sp),'%')}
+     ${metric('metric-pulse-ox','ชีพจรจากเครื่องวัดปลายนิ้ว',value(r.po),'ครั้ง/นาที')}
+     ${metric('metric-glucose','🩸 น้ำตาลในเลือด',value(r.gl),'mg/dL')}
+     ${metric('metric-temp','🌡️ อุณหภูมิร่างกาย',value(r.te),'°C')}
+    </div>
+    ${r.note?`<div class="history-note">📝 หมายเหตุ: ${escapeHTML(r.note)}</div>`:''}
+    <div class="record-actions"><button class="light" onclick="editRecord('${r.id||''}')">แก้ไขรายการ</button><button class="light" onclick="deleteRecord('${r.id||''}')">ลบรายการ</button></div>
+   </article>`;
+  }).join('')+'</div>'
+ : '<div class="history-empty">ยังไม่มีประวัติการบันทึกสุขภาพ</div>';
+}
+
+loadLimits();loadProfile();renderHome();
+</script><script>
+
+// PWA install support. Installation is offered only when browser/platform allows it.
+let deferredInstallPrompt=null;
+const installPanel=document.getElementById('installPanel');
+const installButton=document.getElementById('installButton');
+const installHelp=document.getElementById('installHelp');
+function isStandaloneApp(){
+ return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
+}
+function showInstallPanel(){
+ if(!installPanel) return;
+ if(isStandaloneApp()){installPanel.style.display='none';return;}
+ installPanel.style.display='block';
+}
+window.addEventListener('beforeinstallprompt',e=>{
+ e.preventDefault();deferredInstallPrompt=e;showInstallPanel();
+ if(installButton)installButton.style.display='block';
+});
+if(installButton){
+ installButton.addEventListener('click',async()=>{
+  if(!deferredInstallPrompt){
+   installHelp.textContent='หากไม่เห็นปุ่มติดตั้งอัตโนมัติ ให้เปิดเมนู ⋮ ของเบราว์เซอร์ แล้วเลือก “ติดตั้งแอป” หรือ “เพิ่มลงในหน้าจอหลัก”';
+   return;
+  }
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt=null;
+  installPanel.style.display='none';
+ });
+}
+window.addEventListener('appinstalled',()=>{installPanel.style.display='none';});
+if(!isStandaloneApp()) {
+ showInstallPanel();
+ if(!('serviceWorker' in navigator) || location.protocol==='file:'){
+  installHelp.textContent='เปิดผ่านลิงก์เว็บไซต์ HTTPS ก่อน จึงจะติดตั้งเป็นไอคอนได้ (เปิดไฟล์ HTML โดยตรงยังติดตั้งแบบ PWA ไม่ได้)';
+ } else {
+  installHelp.textContent='หากเบราว์เซอร์ไม่แสดงปุ่มติดตั้ง ให้เปิดเมนู ⋮ แล้วเลือก “ติดตั้งแอป” หรือ “เพิ่มลงในหน้าจอหลัก”';
+ }
+}
+if('serviceWorker' in navigator && (location.protocol==='https:' || location.hostname==='localhost')){
+ window.addEventListener('load',()=>navigator.serviceWorker.register('https://hack1986.github.io/My-health-/service-worker.js', {scope: 'https://hack1986.github.io/My-health-/'}).catch(err=>console.log('Service worker:',err)));
+}
+
+</script>
+</body></html>
